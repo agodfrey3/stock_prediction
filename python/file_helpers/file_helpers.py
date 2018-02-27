@@ -42,3 +42,14 @@ def save_train_test(train_df, test_df, save_path: str, save_as_dict: bool=True):
         save_path = save_path[:-4]
         save_pkl_file(train_df, f"{save_path}_train.csv")
         save_pkl_file(test_df, f"{save_path}_test.csv")
+
+
+def read_lines_from_file(filepath: str):
+
+    file = open(filepath, 'r')
+
+    lines = file.readlines()
+
+    lines = [x.replace("\n", "") for x in lines]
+
+    return lines

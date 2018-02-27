@@ -26,8 +26,13 @@ def time_series_to_X(df: pd.DataFrame, X_col: str='X'):
     :param X_col: Name of the column in which the input data is located.
     :return: numpy.array of X values.
     """
-    df['X'] = df['X'].apply(lambda x: literal_eval(x))
-    return np.asarray(df['X'].tolist())
+    if isinstance(df['X'], str):
+        df['X'] = df['X'].apply(lambda x: literal_eval(x))
+        return np.asarray(df['X'].tolist())
+    elif isinstance(df['X'], list):
+        return np.asarray(df['X'])
+    else:
+        raise ValueError("Unsupported X type found at df['X']")
 
 
 def split_train_test(df: pd.DataFrame, percent: float=0.8):
@@ -66,7 +71,7 @@ def split_time_series(df: pd.DataFrame, chunk_size: int, target_col: float='pric
     return pd.DataFrame(rows)
 
 
-def combine_data_from_dir(save_name: str, search_dir: str, save_dir: str, chunk_sizes: List[int]=[5]):
+def combine_data_from_dir(save_name: str, search_dir: str, save_dir: str, chunk_sizes: List[int]=[10]):
 
     master_df = pd.DataFrame()
 
@@ -84,13 +89,51 @@ def combine_data_from_dir(save_name: str, search_dir: str, save_dir: str, chunk_
         print(f"Saving df to {save_dir}/{save_name}_chunk_{chunk_size}.csv")
         master_df.to_csv(f"{save_dir}/{save_name}_chunk_{chunk_size}.csv", index=False, encoding='utf-8')
 
+def format_percent_change(df):
+
+    rows = []
+
+    df['X'] = df['X'].apply(lambda x: literal_eval(x))
+
+    for i, row in df.iterrows():
+        price = row['y']
+        prev_price = row['X'][-1]
+        change = abs(price - prev_price)
+        change_percent = change / price
+        row['pct'] = change_percent
+
+        changes = []
+
+        for x in range(len(row['X']) - 1):
+            curr = row['X'][x]
+            next = row['X'][x+1]
+            change = abs(curr - next)
+            changes.append(change)
+
+        row['changes'] = changes
+
+        rows.append(row)
+
+    new_df = pd.DataFrame(rows)
+
+    new_df = new_df[['changes', 'pct']].copy()
+    new_df['X'] = new_df['changes']
+    new_df['y'] = new_df['pct']
+    new_df = new_df[['X', 'y']].copy()
+
+    return new_df
+
 def main():
-    main_dir = "C:/Users/Andrew/data/stock_data/"
-    save_dir = "C:/Users/Andrew/data/stock_data/formatted/validation"
+    main_dir = "C:/Users/God/data/stock_data/"
+    load_dir = "C:/Users/God/data/stock_data/day_stocks/formatted/training/day_stock_train_list_chunk_10.csv"
+    save_dir = "C:/Users/God/data/stock_data/day_stocks/formatted/training/day_stock_train_list_percent_chunk_10.csv"
+    day_stock_dir = os.path.join(main_dir, "day_stocks/testing")
 
-    validation_dir = os.path.join(main_dir, "validation")
+    # combine_data_from_dir("day_stock_test_list", search_dir=day_stock_dir, save_dir=save_dir)
 
-    combine_data_from_dir("justin_validation", search_dir=validation_dir, save_dir=save_dir)
+    df = pd.read_csv(load_dir)
+    df = format_percent_change(df)
+    df.to_csv(save_dir, index=False, encoding='utf-8')
 
 
 if __name__ == '__main__':

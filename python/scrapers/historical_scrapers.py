@@ -8,6 +8,7 @@ import requests
 import pandas as pd
 import os
 from typing import List, Dict
+from python.file_helpers.file_helpers import *
 
 
 def fetch_stock_data_helper(stock: str, period: str, verbose: bool=False):
@@ -89,8 +90,9 @@ def save_resulting_data(dataframes: Dict[str, pd.DataFrame], save_dir: str):
 
 
 if __name__ == '__main__':
-    save_dir = "C:/Users/Andrew/data/stock_data"
+    save_dir = "C:/Users/God/data/stock_data"
     validation_save_dir = os.path.join(save_dir, "validation")
+    day_stock_dir = os.path.join(save_dir, "day_stocks")
     training_save_dir = os.path.join(save_dir, "training")
 
     dow_30 = ['axp', 'aapl', 'cat', 'csco', 'cvx', 'xom', 'ge', 'gs', 'hd', 'ibm', 'intc', 'jnj', 'ko', 'jpm', 'mcd',
@@ -98,4 +100,7 @@ if __name__ == '__main__':
 
     justin_validation = ['jnug', 'jdst', 'uwti', 'dwti']
 
-    df = fetch_stock_data(justin_validation, '5y', save=True, save_dir=validation_save_dir)
+    # day_stocks = read_lines_from_file("c:/users/god/desktop/day_trade_stocks.txt")
+    # day_stocks = day_stocks.extend(justin_validation)
+
+    df = fetch_stock_data(justin_validation, '5y', save=True, save_dir=day_stock_dir)

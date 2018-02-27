@@ -15,9 +15,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 import tensorflow as tf
 from sklearn.model_selection import GridSearchCV
-from software_engineering_final.python.file_helpers.file_helpers import save_pkl_file
+from python.file_helpers.file_helpers import save_pkl_file
 
-from software_engineering_final.python.data_helpers.regression_helpers import format_X_y
+from python.data_helpers.regression_helpers import format_X_y
 
 seed = 7
 
@@ -28,11 +28,12 @@ def create_model(neurons: int=9,
                  dropout_rate: float=0.2,
                  optimizer: str='adam',
                  loss: str='mean_squared_error',
-                 activation: str='relu'):
+                 activation: str='relu',
+                 input_dim: int=9):
 
     # create model
     model = Sequential()
-    model.add(Dense(neurons, input_dim=9, kernel_initializer=k_initializer, activation=activation))
+    model.add(Dense(neurons, input_dim=input_dim, kernel_initializer=k_initializer, activation=activation))
     model.add(Dropout(dropout_rate))
     for i in range(num_dense - 1):
         model.add(Dense(neurons, kernel_initializer=k_initializer))
@@ -117,16 +118,7 @@ def get_average_error(model, validation_path: str, validation_name: str):
           f"   Sample size: {num_checked}")
 
 
-if __name__ == '__main__':
-
-    data_dir = "C:/Users/Andrew/data/stock_data/formatted"
-    train_data_path = os.path.join(data_dir, "training/dow_30_time_series_5.csv")
-
-    # validation_path = "C:/Users/Andrew/data/stock_data/formatted/ba_validation.csv"
-    validation_path = "c:/users/andrew/data/stock_data/formatted/validation/justin_validation_chunk_5.csv"
-
-    df = pd.read_csv(train_data_path)
-    X, y = format_X_y(df)
+def do_grid_search(X, y, build_fn=create_model):
 
     epochs = [50, 100, 250, 500, 1000]
     batch_size = [32, 64, 128, 256]
@@ -136,16 +128,19 @@ if __name__ == '__main__':
     neurons = [1, 5, 10, 15, 20, 25, 30]
     num_dense = [1, 3, 5, 7, 9]
 
+    # TODO base y off of percent change, rather than price
+
     param_grid = dict(epochs=epochs,
                       batch_size=batch_size,
                       optimizer=optimizer,
                       activation=activation,
                       dropout_rate=dropout_rate,
-                      neurons=neurons)
+                      neurons=neurons,
+                      num_dense=num_dense)
 
-    model = KerasRegressor(build_fn=create_model, verbose=2)
+    model = KerasRegressor(build_fn=build_fn, verbose=2)
 
-    grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1)
+    grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=2)
     grid_result = grid.fit(X, y)
 
     print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
@@ -156,4 +151,14 @@ if __name__ == '__main__':
         print("%f (%f) with: %r" % (mean, stdev, param))
 
 
+if __name__ == '__main__':
 
+    data_dir = "C:/Users/God/data/stock_data/"
+    train_data_path = os.path.join(data_dir, "day_stocks/formatted/training/day_stock_train_list_chunk_10.csv")
+
+    # validation_path = "C:/Users/Andrew/data/stock_data/formatted/ba_validation.csv"
+    test_data_path = os.path.join(data_dir, "day_stocks/formatted/testing/day_stock_test_list_chunk_10.csv")
+
+    df = pd.read_csv(train_data_path)
+    X, y = format_X_y(df)
+    do_grid_search(X, y, create_model)
